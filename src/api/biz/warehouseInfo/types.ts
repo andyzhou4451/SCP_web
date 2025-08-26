@@ -205,7 +205,18 @@ export interface WarehouseInfoForm extends BaseEntity {
   remark?: string;
 }
 
+export interface WarehouseSimpleQuery  {
+  /**
+   * 经营主体id
+   */
+  tenantId?: string | number;
+}
+
 export interface WarehouseInfoQuery extends PageQuery {
+  /**
+   * 经营主体id
+   */
+  tenantId?: string | number;
   /**
    * 仓库名称
    */

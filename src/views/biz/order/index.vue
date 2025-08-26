@@ -5,7 +5,7 @@
         <el-card shadow="hover">
           <el-form ref="queryFormRef" :model="queryParams" :inline="true">
             <el-form-item label="经营主体" prop="tenantId" v-if="tenantId === '000000'">
-              <el-select v-model="queryParams.tenantId" placeholder="请选择经营主体" clearable @change="handleQuery">
+              <el-select v-model="queryParams.tenantId" placeholder="请选择经营主体" clearable @change="getAllWarehouseList">
                 <el-option v-for="item in tenantList" :key="item.tenantId" :label="item.companyName" :value="item.tenantId" />
               </el-select>
             </el-form-item>
@@ -16,22 +16,38 @@
               <el-input v-model="queryParams.originalOrderNo" placeholder="请输入原始单号" clearable @keyup.enter="handleQuery" />
             </el-form-item>
             <el-form-item label="订单日期" prop="createTime">
-              <el-date-picker clearable v-model="queryParams.createTime" type="date" value-format="YYYY-MM-DD" placeholder="请选择订单日期" />
+              <el-date-picker
+                v-model="dateRange"
+                value-format="YYYY-MM-DD HH:mm:ss"
+                type="daterange"
+                range-separator="-"
+                start-placeholder="开始日期"
+                end-placeholder="结束日期"
+                :default-time="[new Date(2000, 1, 1, 0, 0, 0), new Date(2000, 1, 1, 23, 59, 59)]"
+              ></el-date-picker>
             </el-form-item>
-            <el-form-item label="订单状态" prop="receiverName">
-              <el-input v-model="queryParams.receiverName" placeholder="请选择订单状态" clearable @keyup.enter="handleQuery" />
+            <el-form-item label="订单状态" prop="saleStatus">
+              <el-select v-model="queryParams.saleStatus" clearable placeholder="订单状态" @change="handleQuery">
+                <el-option v-for="dict in sale_order_status" :key="dict.value" :label="dict.label" :value="dict.value" />
+              </el-select>
             </el-form-item>
-            <el-form-item label="售后状态" prop="receiverName">
-              <el-input v-model="queryParams.receiverName" placeholder="请选择售后状态" clearable @keyup.enter="handleQuery" />
+            <el-form-item label="售后状态" prop="afterSalesStatus">
+              <el-select v-model="queryParams.afterSalesStatus" clearable placeholder="售后状态" @change="handleQuery">
+                <el-option v-for="dict in after_sales_status" :key="dict.value" :label="dict.label" :value="dict.value" />
+              </el-select>
             </el-form-item>
             <el-form-item label="收货电话" prop="receiverMobile">
-              <el-input v-model="queryParams.receiverMobile" placeholder="请输入收货电话" clearable @keyup.enter="handleQuery" />
+              <el-input v-model="queryParams.receiverMobile" placeholder="请输入收货电话" clearable @key.enter="handleQuery" />
             </el-form-item>
             <el-form-item label="仓库" prop="warehouseId">
-              <el-input v-model="queryParams.warehouseId" placeholder="请选择仓库" clearable @keyup.enter="handleQuery" />
+              <el-select v-model="queryParams.warehouseId" placeholder="请选择仓库" clearable @change="handleQuery">
+                <el-option v-for="item in warehouseInfoList" :key="item.id" :label="item.warehouseName" :value="item.id" />
+              </el-select>
             </el-form-item>
             <el-form-item label="销售渠道" prop="saleChannelId">
-              <el-input v-model="queryParams.saleChannelId" placeholder="请选择销售渠道" clearable @keyup.enter="handleQuery" />
+              <el-select v-model="queryParams.saleChannelId" placeholder="请选择销售渠道" clearable @change="handleQuery">
+                <el-option v-for="item in saleChannelList" :key="item.id" :label="item.channelName" :value="item.id" />
+              </el-select>
             </el-form-item>
             <el-form-item label="销售店铺" prop="saleShopepName">
               <el-input v-model="queryParams.saleShopepName" placeholder="请输入销售店铺" clearable @keyup.enter="handleQuery" />
@@ -54,8 +70,12 @@
         <el-table-column label="订单号" align="center" prop="orderNo" />
         <el-table-column label="原始单号" align="center" prop="originalOrderNo" />
         <el-table-column label="订单日期" align="center" prop="createTime" />
-        <el-table-column label="订单状态" align="center" prop="saleStatus" />
-        <el-table-column label="售后状态" align="center" prop="afterSalesStatus" />
+        <el-table-column label="订单状态" align="center" prop="saleStatus">
+          <template #default="scope">
+            <dict-tag :options="sale_order_status" :value="scope.row.saleStatus" />
+          </template>
+        </el-table-column>
+        <el-table-column label="售后历史" align="center" prop="afterSalesStatus"> 1件商品退货中</el-table-column>
         <el-table-column label="收货电话" align="center" prop="receiverMobile" />
         <el-table-column label="收货人" align="center" prop="receiverName" />
         <el-table-column label="收货地址" align="center" prop="receiverAddress" />
@@ -68,15 +88,17 @@
         <el-table-column label="实付金额" align="center" prop="paidPrice" />
         <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
           <template #default="scope">
-            <el-tooltip content="详情" placement="top">
-              <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['biz:order:edit']"></el-button>
-            </el-tooltip>
-            <el-tooltip content="发货" placement="top">
-              <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['biz:order:edit']"></el-button>
-            </el-tooltip>
-            <el-tooltip content="查看物流" placement="top">
-              <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['biz:order:remove']"></el-button>
-            </el-tooltip>
+            <div class="flex gap-2">
+              <div>
+                <el-button link type="primary" @click="handleUpdate(scope.row)" v-hasPermi="['biz:order:edit']"> 详情 </el-button>
+              </div>
+              <div>
+                <el-button link type="primary" @click="handleUpdate(scope.row)" v-hasPermi="['biz:order:edit']"> 发货 </el-button>
+              </div>
+              <div>
+                <el-button link type="primary" @click="handleDelete(scope.row)" v-hasPermi="['biz:order:remove']"> 查看物流 </el-button>
+              </div>
+            </div>
           </template>
         </el-table-column>
       </el-table>
@@ -172,7 +194,11 @@ import { listOrder, getOrder, delOrder, addOrder, updateOrder } from '@/api/biz/
 import { OrderVO, OrderQuery, OrderForm } from '@/api/biz/order/types';
 import { useUserStore } from '@/store/modules/user';
 import { listAllTenant } from '@/api/system/tenant';
+import { listAllSaleChannel } from '@/api/biz/saleChannel';
 import { TenantVO } from '@/api/types';
+import { listAllWarehouseInfo } from '@/api/biz/warehouseInfo';
+import { WarehouseInfoQuery, WarehouseSimpleQuery } from '@/api/biz/warehouseInfo/types';
+import { listRole } from '@/api/system/role';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 
@@ -185,9 +211,16 @@ const single = ref(true);
 const multiple = ref(true);
 const total = ref(0);
 const tenantList = ref<TenantVO[]>([]);
+const saleChannelList = ref<any[]>([]);
+const warehouseInfoList = ref<any[]>([]);
 
 const queryFormRef = ref<ElFormInstance>();
 const orderFormRef = ref<ElFormInstance>();
+const dateRange = ref<[DateModelType, DateModelType]>(['', '']);
+
+// 引入字典
+const { sale_order_status } = toRefs<any>(proxy?.useDict('sale_order_status'));
+const { after_sales_status } = toRefs<any>(proxy?.useDict('after_sales_status'));
 
 const dialog = reactive<DialogOption>({
   visible: false,
@@ -273,10 +306,11 @@ const { queryParams, form, rules } = toRefs(data);
 /** 查询销售订单列表 */
 const getList = async () => {
   loading.value = true;
-  const res = await listOrder(queryParams.value);
-  orderList.value = res.rows;
-  total.value = res.total;
-  loading.value = false;
+  listOrder(proxy?.addDateRange(queryParams.value, dateRange.value)).then((res) => {
+    orderList.value = res.rows;
+    total.value = res.total;
+    loading.value = false;
+  });
 };
 
 /** 取消按钮 */
@@ -300,6 +334,9 @@ const handleQuery = () => {
 /** 重置按钮操作 */
 const resetQuery = () => {
   queryFormRef.value?.resetFields();
+  if (tenantId !== '000000') {
+    queryParams.value.tenantId = tenantId;
+  }
   handleQuery();
 };
 
@@ -369,8 +406,25 @@ const getAllTenantList = async () => {
   tenantList.value = res;
 };
 
+const getAllChannelList = async () => {
+  const res = await listAllSaleChannel();
+  saleChannelList.value = res;
+};
+const getAllWarehouseList = async () => {
+  queryParams.value.warehouseId = undefined;
+  const params: WarehouseSimpleQuery = {
+    tenantId: queryParams.value.tenantId || ''
+  };
+
+  const res = await listAllWarehouseInfo(params);
+  warehouseInfoList.value = res;
+  handleQuery();
+};
+
 onMounted(() => {
   getList();
   getAllTenantList();
+  getAllChannelList();
+  getAllWarehouseList();
 });
 </script>

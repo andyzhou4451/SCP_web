@@ -43,6 +43,12 @@ export interface SupplierInfoVO {
    * 备注
    */
   remark: string;
+  externalCode?: string;
+  provinceCode?: string;
+  cityCode?: string;
+  districtCode?: string;
+  wareHouseIds?: Array<string | number>;
+  wareHouseNames?: string;
 }
 
 export interface SupplierInfoForm extends BaseEntity {
@@ -90,7 +96,10 @@ export interface SupplierInfoForm extends BaseEntity {
    * 备注
    */
   remark?: string;
-  //仓库
+  externalCode?: string;
+  provinceCode?: string;
+  cityCode?: string;
+  districtCode?: string;
   wareHouseIds?: Array<string | number>;
 }
 
@@ -134,4 +143,5 @@ export interface SupplierInfoQuery extends PageQuery {
    * 日期范围参数
    */
   params?: any;
+  tenantId?: string | number;
 }

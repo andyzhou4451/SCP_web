@@ -17,6 +17,19 @@ export const listSaleChannel = (query?: SaleChannelQuery): AxiosPromise<SaleChan
 };
 
 /**
+ * 查询全量销售渠道列表
+ * @param query
+ * @returns {*}
+ */
+
+export const listAllSaleChannel = (): AxiosPromise<SaleChannelVO[]> => {
+  return request({
+    url: '/biz/saleChannel/all',
+    method: 'get'
+  });
+};
+
+/**
  * 查询销售渠道详细
  * @param id
  */
@@ -29,7 +42,7 @@ export const getSaleChannel = (id: string | number): AxiosPromise<SaleChannelVO>
 
 export const switchSaleChannelStatus = (id: string | number, status: '0' | '1') => {
   return request({ url: `/biz/saleChannel/${id}/status/${status}`, method: 'put' });
-}
+};
 /**
  * 新增销售渠道
  * @param data

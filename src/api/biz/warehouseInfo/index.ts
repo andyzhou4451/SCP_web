@@ -1,6 +1,11 @@
 import request from '@/utils/request';
 import { AxiosPromise } from 'axios';
-import { WarehouseInfoVO, WarehouseInfoForm, WarehouseInfoQuery } from '@/api/biz/warehouseInfo/types';
+import {
+  WarehouseInfoVO,
+  WarehouseInfoForm,
+  WarehouseInfoQuery,
+  WarehouseSimpleQuery
+} from '@/api/biz/warehouseInfo/types';
 
 /**
  * 查询仓库，用于维护仓库信息列表
@@ -13,6 +18,20 @@ export const listWarehouseInfo = (query?: WarehouseInfoQuery): AxiosPromise<Ware
     url: '/biz/warehouseInfo/list',
     method: 'get',
     params: query
+  });
+};
+
+/**
+ * 查询仓库，用于维护仓库信息列表
+ * @param query
+ * @returns {*}
+ */
+
+export const listAllWarehouseInfo = (query?: WarehouseSimpleQuery): AxiosPromise<WarehouseInfoVO[]> => {
+  return request({
+    url: '/biz/warehouseInfo/all',
+    method: 'post',
+    data: query
   });
 };
 
